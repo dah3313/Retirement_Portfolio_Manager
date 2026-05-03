@@ -60,7 +60,7 @@ Gateway: IBController (IBC) installed to manage the IB Gateway headless UI and h
 
 2. Installation
 
-git clone https://github.com/yourusername/rpm.git
+git clone https://github.com/DAH3313/rpm.git
 cd rpm
 pip install -r requirements.txt
 
