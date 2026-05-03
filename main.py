@@ -98,16 +98,14 @@ def apply_dynamic_config(state):
 # ------------------------------------------------------------------
 # Core execution
 # ------------------------------------------------------------------
-def run_rpm(is_weekly=False, is_monthly=False, cmd_line_dry_run=False):
+def run_rpm(is_weekly=False, is_monthly=False, cmd_line_dry_run=False, alerter=None):
     state = load_state()
     apply_dynamic_config(state)
     
-    # Check if the system has been initialized via setup.py
     is_latched = state.get('is_live_latched', False)
     
     if not is_latched and not cmd_line_dry_run:
         logger.critical("CRITICAL FATAL: RPM has not been initialized.")
-        logger.critical("You must run 'python setup.py' to establish the foundation before enabling systemd timers.")
         sys.exit(1)
 
     effective_dry_run = True if cmd_line_dry_run else not is_latched
@@ -147,42 +145,31 @@ def run_rpm(is_weekly=False, is_monthly=False, cmd_line_dry_run=False):
             config.SMA_12MO_BAR,
         )
 
-        audit_log('sma_data', {
-            'proxy': 'SYNTHETIC_GROWTH',
-            'proxy_tickers': config.SYNTHETIC_INDEX_TICKERS,
-            'price_200': proxy_price_200,
-            'sma_200': sma_200,
-            'price_12mo': proxy_price_12mo,
-            'sma_12mo': sma_12mo,
-        })
-
         # ---- 3. Evaluate circuit breakers (Always Runs) ----
+        was_in_crisis = state['in_buffer_transition']
         strategy = Strategy(
-            in_buffer_transition=state['in_buffer_transition'],
+            in_buffer_transition=was_in_crisis,
             transition_price=state['transition_price'],
         )
         halt_rebalancing, force_buffer = strategy.evaluate_circuit_breakers(
             proxy_price_200, sma_200,
         )
 
-        # Detect transition changes to set/clear the Recovery Clock
-        if state['in_buffer_transition'] and not force_buffer:
+        # ALERT: Circuit Breaker Activation / Deactivation
+        if not was_in_crisis and force_buffer and alerter:
+            alerter.send_buffer_alert('ACTIVATED', f"Proxy index dropped below -7.5% SMA. Crisis mode engaged. Routing all withdrawals to SGOV.")
+        elif was_in_crisis and not force_buffer and alerter:
+            alerter.send_buffer_alert('RECOVERY', f"Proxy index recovered. Crisis mode deactivated. Initiating normal operations and recovery clock.")
+
+        if was_in_crisis and not force_buffer:
             state['recovery_date'] = now.isoformat()
             logger.info("Crisis mode exited. Recovery clock started at %s", state['recovery_date'])
-            audit_log('recovery_started', {'date': state['recovery_date']})
         
-        if not state['in_buffer_transition'] and force_buffer:
+        if not was_in_crisis and force_buffer:
             state['recovery_date'] = None
 
         state['in_buffer_transition'] = strategy.in_buffer_transition
         state['transition_price'] = strategy.transition_price
-
-        audit_log('circuit_breakers', {
-            'halt_rebalancing': halt_rebalancing,
-            'force_buffer': force_buffer,
-            'in_buffer_transition': strategy.in_buffer_transition,
-            'transition_price': strategy.transition_price,
-        })
 
         # ---- 4. WEEKLY ROUTINE: Rebalancing & Refill Logic ----
         if is_weekly:
@@ -196,22 +183,27 @@ def run_rpm(is_weekly=False, is_monthly=False, cmd_line_dry_run=False):
                     refill_active = True
 
             if not halt_rebalancing:
-                # Execute Drift Sells & Cash Deployment Buys
                 rebal_trades = portfolio.generate_rebalance_trades(
                     sgov_target=state['sgov_target_dollars'], 
                     refill_active=refill_active
                 )
                 if rebal_trades:
+                    # ALERT: Large Rebalance Evaluation (>$10,000 threshold)
+                    total_rebal_volume = sum(abs(amount) for direction, ticker, amount in rebal_trades)
+                    if total_rebal_volume > 10000.0 and alerter:
+                        trade_details = "\n".join([f"- {direction} {ticker}: ${amount:,.2f}" for direction, ticker, amount in rebal_trades])
+                        alerter.send_custom(
+                            subject="[RPM] Large Rebalance Executed",
+                            body=f"Executed a significant rebalance totaling ${total_rebal_volume:,.2f}.\n\nTrades:\n{trade_details}"
+                        )
+
                     audit_log('rebalance_and_deploy_trades', {'trades': rebal_trades})
                     for direction, ticker, amount in rebal_trades:
                         if direction == 'SELL':
-                            logger.info('Rebalance SELL: %s $%.2f', ticker, amount)
                             client.sell_dollar_amount(ticker, amount, dry_run=effective_dry_run)
                         elif direction == 'BUY':
-                            logger.info('Rebalance/Refill BUY: %s $%.2f', ticker, amount)
                             client.buy_dollar_amount(ticker, amount, dry_run=effective_dry_run)
 
-                # Execute Buffer Refill Sells
                 if refill_active:
                     refill_rate = getattr(config, 'BUFFER_REFILL_MONTHLY_RATE', 0.0833)
                     refill_sells = portfolio.route_buffer_refill_sells(
@@ -221,11 +213,9 @@ def run_rpm(is_weekly=False, is_monthly=False, cmd_line_dry_run=False):
                     if refill_sells:
                         audit_log('buffer_refill_sells', {'trades': refill_sells})
                         for ticker, amount in refill_sells:
-                            logger.info('Buffer Refill SELL: %s $%.2f', ticker, amount)
                             client.sell_dollar_amount(ticker, amount, dry_run=effective_dry_run)
             else:
                 logger.info('Rebalancing & Refills HALTED by 200-day SMA circuit breaker')
-                audit_log('rebalance_halted', {})
 
         # ---- 5. MONTHLY ROUTINE: Cash Raising & Annual Reviews ----
         if is_monthly:
@@ -237,48 +227,44 @@ def run_rpm(is_weekly=False, is_monthly=False, cmd_line_dry_run=False):
                 logger.info('--- November Annual Review ---')
 
                 freeze = strategy.evaluate_inflation_freeze(proxy_price_12mo, sma_12mo)
-                if freeze:
-                    logger.info('Inflation adjustment FROZEN (market down vs 12mo SMA)')
-                    audit_log('inflation_frozen', {})
-                else:
-                    old_withdrawal = state['current_monthly_withdrawal']
+                if not freeze:
                     state['current_monthly_withdrawal'] *= (1 + getattr(config, 'ANNUAL_INFLATION_RATE', 0.03))
                     target_withdrawal = state['current_monthly_withdrawal']
-                    logger.info('Inflation adjusted: $%.2f → $%.2f', old_withdrawal, target_withdrawal)
-                    audit_log('inflation_adjusted', {'old': old_withdrawal, 'new': target_withdrawal})
 
                 prev_growth = state.get('last_november_growth_value', 0.0)
                 if prev_growth > 0:
                     bonus = strategy.evaluate_november_bonus(portfolio.growth_balance, prev_growth)
                     if bonus > 0:
                         target_withdrawal += bonus
-                        logger.info('November bonus: +$%.2f', bonus)
-                        audit_log('november_bonus', {'bonus': bonus})
+                        if alerter:
+                            alerter.send_custom(subject="[RPM] Bull Market Bonus", body=f"Growth bucket exceeded 25% YoY return. Extracted special dividend: ${bonus:,.2f}")
 
                 state['last_november_growth_value'] = portfolio.growth_balance
 
             # Execute cash raising
             if target_withdrawal > 0:
-                logger.info('Raising $%.2f for withdrawal', target_withdrawal)
-                sell_orders = portfolio.route_cash_raising(
-                    target_withdrawal, force_buffer=force_buffer,
-                )
+                sell_orders = portfolio.route_cash_raising(target_withdrawal, force_buffer=force_buffer)
+                
+                # ALERTS: Cascade Exhaustion & Large Buffer Drawdowns
+                if alerter:
+                    sgov_sold = sum(amt for t, amt in sell_orders if t == config.TICKER_BUFFER)
+                    fi_sold = sum(amt for t, amt in sell_orders if t in config.TICKERS_FI)
+                    growth_sold = sum(amt for t, amt in sell_orders if t in config.TICKERS_GROWTH)
 
-                audit_log('cash_raising', {
-                    'target': target_withdrawal,
-                    'force_buffer': force_buffer,
-                    'orders': sell_orders,
-                })
+                    if sgov_sold > 10000:
+                        alerter.send_buffer_alert('DRAWDOWN', f"Withdrew ${sgov_sold:,.2f} from SGOV buffer.")
+
+                    if force_buffer and sgov_sold > 0 and fi_sold > 0:
+                        alerter.send_buffer_alert('EMPTY_MOVING_TO_FI', f"CRITICAL: SGOV buffer exhausted. Spillover selling forced into Fixed Income (${fi_sold:,.2f}).")
+                    
+                    if fi_sold > 0 and growth_sold > 0:
+                        alerter.send_buffer_alert('FI_EMPTY_MOVING_TO_GROWTH', f"CRITICAL: Fixed Income exhausted. Forced to sell high-volatility Growth assets to meet withdrawal targets (${growth_sold:,.2f}).")
 
                 for ticker, amount in sell_orders:
-                    logger.info('SELL %s for $%.2f', ticker, amount)
-                    success = client.sell_dollar_amount(ticker, amount, dry_run=effective_dry_run)
-                    if not success:
-                        logger.error('Order may not have filled: %s $%.2f', ticker, amount)
+                    client.sell_dollar_amount(ticker, amount, dry_run=effective_dry_run)
 
         # ---- 6. Save state ----
         save_state(state)
-        audit_log('run_complete', {'state': state})
         logger.info('========== RPM RUN COMPLETE ==========')
 
         return effective_dry_run
@@ -292,22 +278,10 @@ def run_rpm(is_weekly=False, is_monthly=False, cmd_line_dry_run=False):
 # ------------------------------------------------------------------
 def main():
     parser = argparse.ArgumentParser(description='Retirement Portfolio Manager')
-    parser.add_argument(
-        '--weekly', action='store_true',
-        help='Execute the weekly 5/25 drift rebalance check.',
-    )
-    parser.add_argument(
-        '--monthly', action='store_true',
-        help='Execute the monthly cash raising and November annual review.',
-    )
-    parser.add_argument(
-        '--dry-run', action='store_true',
-        help='Force dry-run regardless of setup state',
-    )
-    parser.add_argument(
-        '--heartbeat', action='store_true',
-        help='Send a heartbeat alert and exit',
-    )
+    parser.add_argument('--weekly', action='store_true', help='Execute the weekly drift rebalance check.')
+    parser.add_argument('--monthly', action='store_true', help='Execute the monthly cash raising.')
+    parser.add_argument('--dry-run', action='store_true', help='Force dry-run regardless of setup state')
+    parser.add_argument('--heartbeat', action='store_true', help='Send a detailed heartbeat alert')
     args = parser.parse_args()
 
     alerter = AlertManager()
@@ -315,14 +289,50 @@ def main():
     if args.heartbeat:
         state = load_state()
         is_latched = state.get('is_live_latched', False)
-        current_month = datetime.datetime.now().month
 
         if is_latched:
-            alerter.send_custom(
-                subject="[RPM] Heartbeat — SYSTEM ARMED & LIVE",
-                body="The RPM is actively managing the portfolio."
-            )
+            # Connect and pull live state for the detailed heartbeat
+            client = IBKRClient()
+            try:
+                client.connect()
+                balances = client.get_portfolio_state()
+                client.disconnect()
+
+                portfolio = Portfolio(balances)
+                
+                # Math for Alert formatting
+                sgov_target = state.get('sgov_target_dollars', 1.0)
+                sgov_pct = (portfolio.buffer_balance / sgov_target) * 100 if sgov_target else 0.0
+                
+                sgov_status = "ARMED"
+                if state.get('in_buffer_transition'):
+                    sgov_status = "CRISIS MODE ACTIVE"
+                elif sgov_pct < 95.0:
+                    sgov_status = "REFILLING"
+
+                core_balances = {t: balances.get(t, 0) for t in config.CORE_TICKERS}
+                core_total = portfolio.core_balance if portfolio.core_balance > 0 else 1.0
+                weights = {t: (v / core_total * 100) for t, v in core_balances.items()}
+
+                # Calculate days to the 15th (assumed standard payday)
+                now = datetime.datetime.now()
+                payday = now.replace(day=15)
+                if now > payday: 
+                    month = now.month + 1
+                    year = now.year
+                    if month > 12:
+                        month = 1
+                        year += 1
+                    payday = datetime.datetime(year, month, 15)
+                days_to_payday = (payday - now).days
+
+                alerter.send_heartbeat(core_balances, weights, sgov_pct, sgov_status, days_to_payday)
+                
+            except Exception as e:
+                logger.error(f"Heartbeat failed to pull portfolio data: {e}")
+                alerter.send_error("Heartbeat routine failed to connect to IBKR.", exception=e)
         else:
+            current_month = datetime.datetime.now().month
             last_month = state.get('last_idle_heartbeat_month', 0)
             if current_month != last_month:
                 alerter.send_custom(
@@ -333,20 +343,20 @@ def main():
                 save_state(state)
         return
 
-    # Fail fast if the timer doesn't specify an action route
     if not (args.weekly or args.monthly):
         logger.error("Execution aborted: You must specify --weekly or --monthly.")
         sys.exit(1)
 
     try:
-        effective_dry_run = run_rpm(
+        # Pass the alerter down into the execution loop to handle the specific triggers
+        run_rpm(
             is_weekly=args.weekly, 
             is_monthly=args.monthly, 
-            cmd_line_dry_run=args.dry_run
+            cmd_line_dry_run=args.dry_run,
+            alerter=alerter
         )
-        mode_str = ' [DRY RUN]' if effective_dry_run else ' [LIVE EXECUTION]'
-        action_str = 'WEEKLY Rebalance' if args.weekly else 'MONTHLY Withdrawal'
-        alerter.send_success(f'RPM {action_str} executed successfully.{mode_str}')
+        
+        # NOTE: Routine send_success() emails have been removed here to maintain appliance silence.
         
     except Exception as e:
         logger.exception('RPM crashed')
