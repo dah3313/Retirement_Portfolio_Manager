@@ -45,6 +45,18 @@ Buffer Refill Routing: Once the market recovers from a crisis, the system initia
 
 November Annual Review: Every November, the system evaluates the portfolio against a 12-month SMA. If the market is healthy, it applies a 3% inflation raise to your monthly withdrawal. It also calculates a "Bull Market Bonus"—if the Growth bucket exceeds a 25% YoY return, it extracts 5% of the excess gains as a special cash dividend.
 
+Annual Inflation Adjustments & The 12-Month Guardrail
+
+To ensure your income keeps pace with the cost of living without jeopardizing the portfolio during extended bear markets, the RPM employs a conditionally gated inflation adjustment.
+
+The Baseline Raise: Every November, the system evaluates your monthly withdrawal target and applies a standard 3% inflation increase, this number will need to be edited if you want more or less of an inflation increase.  You will need to edit the _config.py_ file.
+                                               #Annual Inflation Guardrails (November Review)#
+                                                   #ANNUAL_INFLATION_RATE = 0.03# 
+
+The Freeze Guardrail: Before applying the raise, the system compares the current price of your Growth proxy index against its 12-month Simple Moving Average (SMA). If the proxy index is down 5% or more relative to its 12-month SMA, the inflation adjustment is frozen.
+
+The Result: During a down year, you will continue to receive your standard monthly withdrawal amount, but the 3% raise is skipped to prevent compounding sequence-of-returns risk and preserve core capital.
+
 Fail-Closed Appliance Design: Uses atomic file saving (rpm_state.json), T+1 cash settlement safety checks, and hard-coded transaction limits to ensure it can survive power outages and broker disconnects without executing erroneous trades.
 
 Deployment Guide
@@ -97,71 +109,52 @@ Routine Communication
 Weekly Heartbeat
 
   Timing: Every Sunday at 12:00 PM (Noon).
-
   Trigger: Routine systemd timer.
-
   Description: A comprehensive snapshot confirming the OS, network, and IBKR Gateway are alive. It includes the upcoming days to your scheduled payday, the status and funding percentage of the SGOV buffer, and the current balance/weighting of the core ETF portfolio.
 
 Circuit Breaker & Crisis Alerts
 
   Crisis Mode: ACTIVATED
-
   Timing: Evaluated during scheduled runs (Weekly/Monthly).
-
   Trigger: The synthetic proxy index of the Growth assets drops 7.5% below its 200-day Simple Moving Average (SMA).
-
   Description: Alerts that the system has halted internal rebalancing and will route all future monthly withdrawals exclusively to the SGOV buffer to protect core assets.
 
 Crisis Mode: RECOVERY
 
   Timing: Evaluated during scheduled runs (Weekly/Monthly).
-
   Trigger: The proxy index recovers to 3% above the price at which the crisis mode was originally activated.
-
   Description: Alerts that normal operations have resumed and the 60-day recovery clock has started before the system will begin automatically siphoning core assets to refill the SGOV buffer.  60 day delay is to allow Growth assets to recover before a heavy draw begins, historically Growth comes back with a roar after a deep dip.
 
 Execution & Threshold Alerts
 
   Large Core Rebalance Executed
-
   Timing: Mondays at 9:30 AM EST (if triggered).
-
   Trigger: The 5/25 drift bands force an internal reallocation with a total trade volume exceeding $10,000.
-
   Description: Provides an itemized list of the specific BUY/SELL orders executed to re-establish the 50/50 core equilibrium.
 
 Large Buffer Drawdown
 
   Timing: Monthly Withdrawal Run (if triggered).
-
   Trigger: The system pulls more than $10,000 from the SGOV buffer in a single transaction.
-
   Description: A notification of a significant draw on the crisis buffer.
 
 Annual Bull Market Bonus
 
   Timing: The November Withdrawal Run (Annually).
-
   Trigger: The Growth bucket achieves a Year-Over-Year return greater than 25%.
-
-  Description: Alerts that the system has automatically extracted 5% of the excess gains as a special cash dividend added to that month's withdrawal.
+  Description: Alerts that the system has automatically extracted 5% of the excess gains as a special cash dividend added to that month's withdrawal.  A pre-Christmas bonus for having a banner market year.
 
 Cascade Failure Alerts (Emergency)
 
   Cascade Level 1: Buffer Exhausted
-
   Timing: Monthly Withdrawal Run.
-
   Trigger: The system is in Crisis Mode, but the SGOV buffer has run completely dry.
-
   Description: Critical alert that spillover selling has been forced into the high-yield Fixed Income bucket to meet the monthly withdrawal requirement.
 
 Cascade Level 2: Fixed Income Exhausted
 
   Timing: Monthly Withdrawal Run.
-
   Trigger: Both the SGOV buffer and Fixed Income buckets are completely depleted.
-
   Description: Severe critical alert that the system has been forced to cannibalize highly volatile Growth assets at depressed prices to meet the withdrawal requirement.
 
   Hardware & Connection Failures
@@ -169,15 +162,12 @@ Cascade Level 2: Fixed Income Exhausted
 System Failure / Crash
 
   Timing: Immediate (upon failure).
-
   Trigger: The Python script crashes, loses connection to the IBKR Gateway and exhausts retries, or encounters an unhandled exception.
-
   Description: Sends a failure notification containing the full Python traceback log for debugging.
 
 Setup Pending (Pre-Activation)
 
   Timing: Once a month (if uninitialized).
-
   Trigger: The machine is powered on and network-connected, but setup.py has not been run.
   Description: Confirms hardware viability but warns that the RPM is unarmed.
 
