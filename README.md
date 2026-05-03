@@ -1,7 +1,6 @@
+##Retirement Portfolio Manager (RPM)
 
-**This whole project from conception on was predicated on a high-yield multi sector bonds backend bolted on to a high volatility high yield front end.  The logic structure is designed to provide reliable income at via a high withdrawal rate 8.5% relative to the starting portfolio total balance while preventing damage to Growth assets in a market downturn and to harvest the high volatility growth assets while providing for a thick buffer (SGOV+FI) thus de-risking the withdrawal schema to ride out extended market rough patches.
-
-Retirement Portfolio Manager (RPM)
+#This whole project from conception on was predicated on a high-yield multi sector bonds backend bolted on to a high volatility high yield front end.  The logic structure is designed to provide reliable income at via a high withdrawal rate 8.5% relative to the starting portfolio total balance while preventing damage to Growth assets in a market downturn and to harvest the high volatility growth assets while providing for a thick buffer (SGOV+FI) thus de-risking the withdrawal schema to ride out extended market rough patches.
 
 The RPM is a stateless, rules-based, high-velocity decumulation appliance designed to run autonomously on a headless Linux server. It connects directly to an Interactive Brokers (IBKR) account to manage a specialized retirement portfolio.
 ⚠️ CRITICAL WARNINGS: READ BEFORE CLONING ⚠️
