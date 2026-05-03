@@ -12,11 +12,13 @@ To function mathematically, the RPM requires absolute control over the portfolio
 ##2. STRICTLY FOR TAX-ADVANTAGED ACCOUNTS##
 
 Because of the Day 1 mass liquidation, the 5/25 weekly rebalancing bands, and the automated buffer siphoning logic, this system generates a high volume of internal trades. You must only run this inside a tax-advantaged account (e.g., Roth IRA or Traditional IRA). Running this in a standard taxable brokerage account will generate an immediate and continuous nightmare of short-term capital gains and complex tax liabilities.
-The Philosophy: High-Velocity Decumulation
 
-The RPM is not designed to manage a standard, low-yield 60/40 Boglehead portfolio. If you want to withdraw a safe 4% a year, buy VTI and BND and manage it yourself.
+The RPM is not designed to manage a standard, low-yield 60/40 Boglehead portfolio. If you want to withdraw a standard 4% a year, buy VTI and BND.
 
-The RPM is a specialized engine designed to mathematically sustain exceptionally high withdrawal rates (e.g., 8.0% to 8.5%). To achieve this, it relies on a specific structural architecture that pairs highly volatile growth assets with high-yield active bonds, protected by a massive, isolated cash-equivalent blast shield.
+The RPM is a specialized engine designed to mathematically sustain exceptionally high withdrawal rates (e.g., 8.0% to 8.5%). To achieve this, it relies on a specific structural architecture that pairs highly volatile growth assets with high-yield active bonds, protected by a massive, isolated cash-equivalent blast shield.  
+
+##If you want to adjust the initial withdrawal rate up or down you'll need to edit line 36 of _config.py_ "INITIAL_WITHDRAWAL_RATE = 0.085" it defaults to 8.5%
+
 The Three-Tier Architecture
 
 By default, the RPM expects to manage six specific assets:
