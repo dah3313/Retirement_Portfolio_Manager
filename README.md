@@ -21,7 +21,7 @@ The RPM is a specialized engine designed to mathematically sustain exceptionally
 
 ##If you want to adjust the initial withdrawal rate up or down you'll need to edit line 36 of _config.py_ "INITIAL_WITHDRAWAL_RATE = 0.085" it defaults to 8.5%
 
--- NOTE:  YOU WILL NEED TO SET UP IBKR TO PULL YOUR DESIRED DRAW VIA _IBKRs_ AUTO ACH BANK TRANSFER-- All RPM will do is free up the cash so you can have a payday, you yourself will need to arrange to get the cash into your bank.
+- NOTE:  YOU WILL NEED TO SET UP IBKR TO PULL YOUR DESIRED DRAW VIA _IBKRs_ AUTO ACH BANK TRANSFER-- All RPM will do is free up the cash so you can have a payday, you yourself will need to arrange to get the cash into your bank.
  
 The Three-Tier Architecture
 
