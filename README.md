@@ -86,7 +86,100 @@ rpm-weekly.timer (Runs every Monday at 9:30 AM EST): Evaluates circuit breakers 
 
 rpm-monthly.timer (Runs 4 days prior to your ACH pull): Raises the exact cash required for your monthly withdrawal and handles the November Annual Review.
 
-rpm-heartbeat.timer (Runs every 6 hours): A dead-man's switch that sends an email/SMS confirming the OS, network, and broker connection are alive.
+rpm-heartbeat.timer (Runs once a week): A dead-man's switch that sends an email/SMS confirming the OS, network, and broker connection are alive.  Provides balance and weight of each core asset and buffer status.  See more detail below.
+
+5.  Alert Architecture & Notification Triggers
+
+The RPM is designed to operate as a silent appliance. It will not generate "routine success" emails for everyday rebalancing or monthly withdrawals. It is configured to communicate exactly once a week to confirm hardware viability, and will otherwise only alert you if an extraordinary threshold or crisis event is triggered.
+
+Routine Communication
+
+Weekly Heartbeat
+
+  Timing: Every Sunday at 12:00 PM (Noon).
+
+  Trigger: Routine systemd timer.
+
+  Description: A comprehensive snapshot confirming the OS, network, and IBKR Gateway are alive. It includes the upcoming days to your scheduled payday, the status and funding percentage of the SGOV buffer, and the current balance/weighting of the core ETF portfolio.
+
+Circuit Breaker & Crisis Alerts
+
+  Crisis Mode: ACTIVATED
+
+  Timing: Evaluated during scheduled runs (Weekly/Monthly).
+
+  Trigger: The synthetic proxy index of the Growth assets drops 7.5% below its 200-day Simple Moving Average (SMA).
+
+  Description: Alerts that the system has halted internal rebalancing and will route all future monthly withdrawals exclusively to the SGOV buffer to protect core assets.
+
+Crisis Mode: RECOVERY
+
+  Timing: Evaluated during scheduled runs (Weekly/Monthly).
+
+  Trigger: The proxy index recovers to 3% above the price at which the crisis mode was originally activated.
+
+  Description: Alerts that normal operations have resumed and the 60-day recovery clock has started before the system will begin automatically siphoning core assets to refill the SGOV buffer.  60 day delay is to allow Growth assets to recover before a heavy draw begins, historically Growth comes back with a roar after a deep dip.
+
+Execution & Threshold Alerts
+
+  Large Core Rebalance Executed
+
+  Timing: Mondays at 9:30 AM EST (if triggered).
+
+  Trigger: The 5/25 drift bands force an internal reallocation with a total trade volume exceeding $10,000.
+
+  Description: Provides an itemized list of the specific BUY/SELL orders executed to re-establish the 50/50 core equilibrium.
+
+Large Buffer Drawdown
+
+  Timing: Monthly Withdrawal Run (if triggered).
+
+  Trigger: The system pulls more than $10,000 from the SGOV buffer in a single transaction.
+
+  Description: A notification of a significant draw on the crisis buffer.
+
+Annual Bull Market Bonus
+
+  Timing: The November Withdrawal Run (Annually).
+
+  Trigger: The Growth bucket achieves a Year-Over-Year return greater than 25%.
+
+  Description: Alerts that the system has automatically extracted 5% of the excess gains as a special cash dividend added to that month's withdrawal.
+
+Cascade Failure Alerts (Emergency)
+
+  Cascade Level 1: Buffer Exhausted
+
+  Timing: Monthly Withdrawal Run.
+
+  Trigger: The system is in Crisis Mode, but the SGOV buffer has run completely dry.
+
+  Description: Critical alert that spillover selling has been forced into the high-yield Fixed Income bucket to meet the monthly withdrawal requirement.
+
+Cascade Level 2: Fixed Income Exhausted
+
+  Timing: Monthly Withdrawal Run.
+
+  Trigger: Both the SGOV buffer and Fixed Income buckets are completely depleted.
+
+  Description: Severe critical alert that the system has been forced to cannibalize highly volatile Growth assets at depressed prices to meet the withdrawal requirement.
+
+  Hardware & Connection Failures
+
+System Failure / Crash
+
+  Timing: Immediate (upon failure).
+
+  Trigger: The Python script crashes, loses connection to the IBKR Gateway and exhausts retries, or encounters an unhandled exception.
+
+  Description: Sends a failure notification containing the full Python traceback log for debugging.
+
+Setup Pending (Pre-Activation)
+
+  Timing: Once a month (if uninitialized).
+
+  Trigger: The machine is powered on and network-connected, but setup.py has not been run.
+  Description: Confirms hardware viability but warns that the RPM is unarmed.
 
 5.  Testing in a Paper Trading Account:
 
