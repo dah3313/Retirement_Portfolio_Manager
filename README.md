@@ -1,6 +1,8 @@
 ##Retirement Portfolio Manager (RPM)
 
-#This whole project from conception on was predicated on a high-yield multi sector bonds backend bolted on to a high volatility high yield front end.  The logic structure is designed to provide reliable income at via a high withdrawal rate up to 8.5% relative to the starting portfolio total balance while preventing damage to Growth assets in a market downturn and to harvest the high volatility growth assets while providing for a thick buffer (SGOV+FI) thus de-risking the withdrawal schema to ride out extended market rough patches.  I can't claim any credit for the code itself, Gemini and Claude did all the coding.  The ideas are my own.
+-- _Read this in its entirety before embarking on this project!_
+
+- This whole project from conception on was predicated on a high-yield multi sector bonds backend bolted on to a high volatility high yield front end.  The logic structure is designed to provide reliable income at via a high withdrawal rate up to 8.5% relative to the starting portfolio total balance while preventing damage to Growth assets in a market downturn and to harvest the high volatility growth assets while providing for a thick buffer (SGOV+FI) thus de-risking the withdrawal schema to ride out extended market rough patches.  I can't claim any credit for the code itself, Gemini and Claude did all the coding.  The ideas are my own.
 
 The RPM is a stateless, rules-based, high-velocity decumulation appliance designed to run autonomously on a headless Linux server. It connects directly to an Interactive Brokers (IBKR) account to manage a specialized retirement portfolio.
 ⚠️ CRITICAL WARNINGS: READ BEFORE CLONING ⚠️
@@ -19,6 +21,8 @@ The RPM is a specialized engine designed to mathematically sustain exceptionally
 
 ##If you want to adjust the initial withdrawal rate up or down you'll need to edit line 36 of _config.py_ "INITIAL_WITHDRAWAL_RATE = 0.085" it defaults to 8.5%
 
+-- NOTE:  YOU WILL NEED TO SET UP IBKR TO PULL YOUR DESIRED DRAW VIA _IBKRs_ AUTO ACH BANK TRANSFER-- All RPM will do is free up the cash so you can have a payday, you yourself will need to arrange to get the cash into your bank.
+ 
 The Three-Tier Architecture
 
 By default, the RPM expects to manage six specific assets:
