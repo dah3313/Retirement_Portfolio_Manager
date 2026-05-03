@@ -5,11 +5,11 @@
 The RPM is a stateless, rules-based, high-velocity decumulation appliance designed to run autonomously on a headless Linux server. It connects directly to an Interactive Brokers (IBKR) account to manage a specialized retirement portfolio.
 ⚠️ CRITICAL WARNINGS: READ BEFORE CLONING ⚠️
 
-#1. THE DAY-1 BULLDOZER (MASS LIQUIDATION)
+##1. THE DAY-1 BULLDOZER (MASS LIQUIDATION)##
 
 To function mathematically, the RPM requires absolute control over the portfolio's asset allocation. When you run setup.py to initialize the system, it will automatically issue market SELL orders for every single asset in your account that is not explicitly defined in the config.py core holdings. It does not care about your cost basis. It will liquidate your legacy stocks, mutual funds, and old ETFs to cash, and use that cash to build its required foundation.
 
-#2. STRICTLY FOR TAX-ADVANTAGED ACCOUNTS
+##2. STRICTLY FOR TAX-ADVANTAGED ACCOUNTS##
 
 Because of the Day 1 mass liquidation, the 5/25 weekly rebalancing bands, and the automated buffer siphoning logic, this system generates a high volume of internal trades. You must only run this inside a tax-advantaged account (e.g., Roth IRA or Traditional IRA). Running this in a standard taxable brokerage account will generate an immediate and continuous nightmare of short-term capital gains and complex tax liabilities.
 The Philosophy: High-Velocity Decumulation
