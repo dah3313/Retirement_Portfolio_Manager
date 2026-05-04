@@ -1,9 +1,9 @@
-## Retirement Portfolio Manager (RPM)
+##Retirement Portfolio Manager (RPM)
 
 -- _Read this in its entirety before embarking on this project!_
 
-- This whole project from conception on was predicated on a high-yield multi sector bonds backend bolted to a high volatility high yield front end.  Bonds stay stable & volatile Growth is harvested when up and left alone when down. 
-The logic structure is designed to provide reliable income at via a high withdrawal rate up to 8.5% relative to the starting portfolio total balance while preventing damage to Growth assets in a market downturn and to harvest the high volatility growth assets while providing for a thick buffer (SGOV+FI) thus de-risking the withdrawal schema to ride out extended market rough patches.  I can't claim any credit for the code itself, Gemini and Claude did all the coding.  The ideas are my own.
+- This whole project from conception on was predicated on a high-yield multi sector bonds backend bolted to a high volatility high yield front end.  Bonds stay stable & volatile Growth is harvested when up and left alone when down.  It's designed to take _advantage_ of Growth risk but not actually _BE_ risky.
+- The logic structure is designed to provide reliable income at via a high withdrawal rate up to 8.5% relative to the starting portfolio total balance while preventing damage to Growth assets in a market downturn and to harvest the high volatility growth assets while providing for a thick buffer (SGOV+FI) thus de-risking the withdrawal schema to ride out extended market rough patches.  I can't claim any credit for the code itself, Gemini and Claude did all the coding.  The ideas are my own.
 
 The RPM is a stateless, rules-based, high-velocity decumulation appliance designed to run autonomously on a headless Linux server. It connects directly to an Interactive Brokers (IBKR) account to manage a specialized retirement portfolio.
 
@@ -120,7 +120,7 @@ Run the setup script:
 python3 setup.py
 ```
 
-The script connects to IBKR, computes funding targets, and walks you through any non-core positions one at a time — you decide per-position whether to liquidate (`L`), keep (`K`, the default), liquidate-all (`A`), or quit (`Q`).  Then it displays the full plan (kept legacy assets, queued liquidations, target dollar amounts per ticker) and asks for a final `[y/N]`.
+The script connects to IBKR, computes funding targets, and walks you through any non-core positions one at a time — you decide per-position whether to liquidate (`L`), keep (`K`), [the default], liquidate-all (`A`), or quit (`Q`).  Then it displays the full plan (kept legacy assets, queued liquidations, target dollar amounts per ticker) and asks for a final `[y/N]`.
 
 On confirmation it executes the selected SELL orders (verifying each one fills before proceeding), executes the foundation BUY orders for SGOV + the four core tickers, and writes `rpm_state.json` with the schema version and is_live_latched flag set.
 
