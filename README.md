@@ -1,11 +1,14 @@
-##Retirement Portfolio Manager (RPM)
+##Retirement Portfolio Manager (RPM)##
 
 -- _Read this in its entirety before embarking on this project!_
 
-- This whole project from conception on was predicated on a high-yield multi sector bonds backend bolted to a high volatility high yield front end.  Bonds stay stable & volatile Growth is harvested when up and left alone when down.  It's designed to take _advantage_ of Growth risk but not actually _BE_ risky.
-- The logic structure is designed to provide reliable income at via a high withdrawal rate up to 8.5% relative to the starting portfolio total balance while preventing damage to Growth assets in a market downturn and to harvest the high volatility growth assets while providing for a thick buffer (SGOV+FI) thus de-risking the withdrawal schema to ride out extended market rough patches.  I can't claim any credit for the code itself, Gemini and Claude did all the coding.  The ideas are my own.
-
 The RPM is a stateless, rules-based, high-velocity decumulation appliance designed to run autonomously on a headless Linux server. It connects directly to an Interactive Brokers (IBKR) account to manage a specialized retirement portfolio.
+
+The RPM is NOT designed to manage a standard low-yield 4% 60/40 portfolio. It was designed for a retiree who wants to "Set it and forget it" and get on with their life while extracting the maximum safe monthly income possible from their IRA account.  
+No human could duplicate the performance the RPM provides; The constant lookback calculations, guardrail calculations, monitoring, rebalance calculations, asset balance shuffling, and withdrawal math would very rapidly exhaust anybody - if it could even be done at all.
+
+- This whole project from conception on was predicated on a high-yield multi sector bonds back-end bolted to a high volatility high yield front- end.  Bonds stay stable & volatile Growth is harvested when up and left alone when down.  It's designed to take _advantage_ of Growth risk but not actually _BE_ risky.
+- The logic structure is designed to provide reliable income at via a high withdrawal rate up to 8.5% relative to the starting portfolio total balance while preventing damage to Growth assets in a market downturn and to harvest the high volatility growth assets while providing for a thick buffer (SGOV+FI) thus de-risking the withdrawal schema to ride out extended market rough patches.  Its been stress-tested extensively by doing 20-year backtests along or in conjunction with scenario injections of varied catastrophic events.  I can't claim any credit for the code itself, Gemini and Claude did all the coding.  The ideas are my own.
 
 ⚠️ CRITICAL WARNINGS: READ BEFORE CLONING ⚠️
 
@@ -32,13 +35,12 @@ Kept positions are completely invisible to the RPM thereafter.  This means you c
 
 Because of the Day 1 liquidations, the 5/25 weekly rebalancing bands, and the automated buffer siphoning logic, this system generates a high volume of internal trades. You must only run this inside a tax-advantaged account (e.g., Roth IRA or Traditional IRA). Running this in a standard taxable brokerage account will generate an immediate and continuous nightmare of short-term capital gains and complex tax liabilities.
 
-The RPM is not designed to manage a standard, low-yield 60/40 Boglehead portfolio. If you want to withdraw a standard 4% a year, buy VTI and BND.
-
-The RPM is a specialized engine designed to mathematically sustain exceptionally high withdrawal rates (e.g., 8.0% to 8.5%). To achieve this, it relies on a specific structural architecture that pairs highly volatile growth assets with high-yield active bonds, protected by a massive, isolated cash-equivalent blast shield.  
-
-## Adjusting the initial withdrawal rate
+The RPM is a specialized engine designed to mathematically sustain exceptionally high withdrawal rates (e.g., 8.0% to 8.5%). To achieve this, it relies on a specific structural architecture that pairs highly volatile growth assets with high-yield active bonds, protected by a massive, isolated cash-equivalent blast shield.
+  
+**3. Adjusting the initial withdrawal rate**
 
 If you want to adjust the initial withdrawal rate up or down, edit `INITIAL_WITHDRAWAL_RATE` in `config.py` (defaults to `0.085`, i.e. 8.5%).
+Example: At a 8.5% withdrawal rate a $700,000.00 portfolio will provide an initial $4,958.33 monthly.
 
 - NOTE:  YOU WILL NEED TO SET UP IBKR TO PULL YOUR DESIRED DRAW VIA _IBKRs_ AUTO ACH BANK TRANSFER-- All RPM will do is free up the cash so you can have a payday, you yourself will need to arrange to get the cash into your bank.
  
@@ -66,7 +68,7 @@ Core Features & Mechanics
 
 Trend Simple Moving Average (SMA) Circuit Breakers (10-month monthly-bar lookback): The RPM monitors a synthetic equal-weighted index of your Growth assets, built by chaining per-bar percentage returns across the underlying tickers (so a $50 fund and a $500 fund contribute equally per percent moved, regardless of share-price magnitude).  If the index falls 5% below its trend SMA, all rebalancing is halted to prevent selling low.  If it falls 7.5% below, Crisis Mode is triggered, and withdrawals are routed exclusively to the SGOV buffer.
 
-Crisis Mode Cascading Withdrawals: If the 18-month SGOV buffer is exhausted, the cash-raising cascade transitions to pulling from the Fixed Income tier. Because the FI assets (PYLD, JPIE) are untouched during the 1.5-year SGOV drain, their continuous high-yield generation compounds and slows their eventual depletion. Mathematically, a conservative 6% yield allows the FI tier to sustain an 8.5% withdrawal rate for an additional 6.5 years. 
+Crisis Mode Cascading Withdrawals: If the 18-month SGOV buffer is exhausted, the cash-raising cascade transitions to pulling from the Fixed Income tier. Because the FI assets (PYLD, JPIE) are untouched during the 1.5-year SGOV drain, their continuous high-yield dividend generation compounds and slows their eventual depletion. Mathematically, a conservative 6% yield allows the Fixed Income tier to sustain an 8.5% withdrawal rate for an additional 6.5 years. 
 - _Only after an estimated 8 total years of continuous crisis would the system exhaust the FI tier and be forced to cannibalize Growth assets as a last resort._
 
 Per-Position Residual Floor ($1,500): No individual position is ever drawn below $1,500 by the cash-raising cascade.  When a tier hits the residual floor, withdrawals spill to the next tier rather than continuing to drain the position to zero.  This protects cost-basis lots and keeps every position viable for future rebalancing buys.
@@ -82,8 +84,8 @@ Annual Inflation Adjustments & The 12-Month Guardrail
 To ensure your income keeps pace with the cost of living without jeopardizing the portfolio during extended bear markets, the RPM employs a conditionally gated inflation adjustment:
 
 The Baseline Raise: Every November, the system evaluates your monthly withdrawal target and applies a standard 3% inflation increase, this number will need to be edited if you want more or less of an inflation increase.  You will need to edit the _config.py_ file.
-                                               #Annual Inflation Guardrails (November Review)#
-                                                   #ANNUAL_INFLATION_RATE = 0.03# 
+#Annual Inflation Guardrails (November Review)#
+ANNUAL_INFLATION_RATE = 0.03 
 
 The Freeze Guardrail: Before applying the raise, the system compares the current price of your Growth proxy index against its 12-month SMA. If the proxy index is down 5% or more relative to its 12-month SMA, the inflation adjustment is frozen.
 
@@ -177,7 +179,7 @@ Annual Bull Market Bonus
 
   Timing: The November Withdrawal Run (Annually).
   Trigger: The Growth bucket achieves a Year-Over-Year return greater than 25%.
-  Description: Alerts that the system has automatically extracted 5% of the excess gains as a special cash dividend added to that month's withdrawal.  A pre-Christmas bonus for having a banner market year.
+  Description: Alerts that the system has automatically extracted 5% of the excess gains as a special cash dividend added to that month's withdrawal.
 
 Cascade Failure Alerts (Emergency)
 
@@ -212,3 +214,15 @@ If you want to watch the RPM execute trades with fake money before taking it liv
 In your config.py, change the port: IBKR_PORT = 4002 (IB Gateway uses 4001 for Live, 4002 for Paper).
 
 In your IBC config.ini, set: TradingMode=paper
+
+
+
+
+
+
+This project was created to provide for my distinctly NOT tech or finance-inclined wife in the event of my untimely death & my Military Retirement and VA disability disappears and all she would be left with is my Social Security.
+
+It was only after I'd finished the first draft of the program and it checked out mathmatically (thank you Claude & Gemini) that I realized I had something special.  It could potentially help millions of retirees bolster the income from their small-to-middling IRA portfolios like ours.  I hope you find it useful and it makes a difference in your lives.
+
+Good Luck!
+David
