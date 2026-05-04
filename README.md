@@ -7,7 +7,7 @@ The RPM is a stateless, rules-based, high-velocity decumulation appliance design
 The RPM is NOT designed to manage a standard low-yield 4% 60/40 portfolio. It was designed for a retiree who wants to "Set it and forget it" and get on with their life while extracting the maximum safe monthly income possible from their IRA account.  
 No human could duplicate the performance the RPM provides; The constant lookback calculations, guardrail calculations, monitoring, rebalance calculations, asset balance shuffling, and withdrawal math would very rapidly exhaust anybody - if it could even be done at all.
 
-- This whole project from conception on was predicated on a high-yield multi sector bonds back-end bolted to a high volatility high yield front- end.  Bonds stay stable & volatile Growth is harvested when up and left alone when down.  It's designed to take _advantage_ of Growth risk but not actually _BE_ risky.
+- This whole project from conception on was predicated on a high-yield multi sector bonds back-end bolted to a high volatility high yield front-end.  Bonds stay stable & volatile Growth is harvested when up and left alone when down.  It's designed to take _advantage_ of Growth risk but not actually _BE_ risky.
 - The logic structure is designed to provide reliable income at via a high withdrawal rate up to 8.5% relative to the starting portfolio total balance while preventing damage to Growth assets in a market downturn and to harvest the high volatility growth assets while providing for a thick buffer (SGOV+FI) thus de-risking the withdrawal schema to ride out extended market rough patches.  Its been stress-tested extensively by doing 20-year backtests along or in conjunction with scenario injections of varied catastrophic events.  I can't claim any credit for the code itself, Gemini and Claude did all the coding.  The ideas are my own.
 
 ⚠️ CRITICAL WARNINGS: READ BEFORE CLONING ⚠️
@@ -75,7 +75,7 @@ Per-Position Residual Floor ($1,500): No individual position is ever drawn below
 
 Buffer Refill Routing: Once the market recovers from a crisis, the system initiates a 12-month automated siphoning sequence, bleeding off core assets to rebuild the 18-month SGOV blast shield.
 
-November Annual Review: Every November, the system evaluates the portfolio against a 12-month SMA. If the market is healthy, it applies a 3% inflation raise to your monthly withdrawal. It also calculates a "Bull Market Bonus"—if the Growth bucket exceeds a 25% YoY return, it extracts 5% of the excess gains as a special cash dividend.
+November Annual Review: Every November, the system evaluates the portfolio against a 12-month SMA. If the market is healthy, it applies a 3% inflation raise to your monthly withdrawal. It also calculates a "Bull Market Bonus"—if the Growth bucket exceeds a 25% YoY return, it extracts 5% of the excess gains as a special cash dividend.  A pre-Christmas award for having a banner market year.
 
 Weekly and Crisis Alerts:  Once a week the user will get a SMS Text and an email showing balances and days to payday.  It will also notify you if there is a crisis.
 
@@ -84,8 +84,7 @@ Annual Inflation Adjustments & The 12-Month Guardrail
 To ensure your income keeps pace with the cost of living without jeopardizing the portfolio during extended bear markets, the RPM employs a conditionally gated inflation adjustment:
 
 The Baseline Raise: Every November, the system evaluates your monthly withdrawal target and applies a standard 3% inflation increase, this number will need to be edited if you want more or less of an inflation increase.  You will need to edit the _config.py_ file.
-#Annual Inflation Guardrails (November Review)#
-ANNUAL_INFLATION_RATE = 0.03 
+#Annual Inflation Guardrails (November Review)# -- #ANNUAL_INFLATION_RATE = 0.03# 
 
 The Freeze Guardrail: Before applying the raise, the system compares the current price of your Growth proxy index against its 12-month SMA. If the proxy index is down 5% or more relative to its 12-month SMA, the inflation adjustment is frozen.
 
@@ -147,7 +146,7 @@ Weekly Heartbeat
 
   Timing: Every Sunday at 12:00 PM (Noon).
   Trigger: Routine systemd timer.
-  Description: A comprehensive snapshot confirming the OS, network, and IBKR Gateway are alive. It includes the upcoming days to your scheduled payday, the status and funding percentage of the SGOV buffer, and the current balance/weighting of the core ETF portfolio.
+  Description: A comprehensive snapshot confirming the OS, network, IBKR Gateway and RPM are alive. It includes the upcoming days to your scheduled payday, the status and funding percentage of the SGOV buffer, and the current balance/weighting of the core ETF portfolio.
 
 Circuit Breaker & Crisis Alerts
 
@@ -214,15 +213,19 @@ If you want to watch the RPM execute trades with fake money before taking it liv
 In your config.py, change the port: IBKR_PORT = 4002 (IB Gateway uses 4001 for Live, 4002 for Paper).
 
 In your IBC config.ini, set: TradingMode=paper
-
-
-
-
-
-
+#
+#
+If you want to modify this program I recommend you copy-and-paste ALL of the files into Claude and ask him to adjust it to fit your desires and provide a download link.  Copy and pasting the screen output from Gemini and inserting them into the modules was incredibly tedious and error-prone.  For whatever reason the 'copy' button would sometimes truncate files.
+#
+#
+#
+#
+#
+#
 This project was created to provide for my distinctly NOT tech or finance-inclined wife in the event of my untimely death & my Military Retirement and VA disability disappears and all she would be left with is my Social Security.
 
-It was only after I'd finished the first draft of the program and it checked out mathmatically (thank you Claude & Gemini) that I realized I had something special.  It could potentially help millions of retirees bolster the income from their small-to-middling IRA portfolios like ours.  I hope you find it useful and it makes a difference in your lives.
+It was only after I'd finished the first draft of the program and it checked out mathmatically (thank you Claude & Gemini) and I did all the testing that I realized I had something special.  It could potentially help millions of retirees bolster the income from their small-to-middling IRA portfolios like ours.  I hope you find it useful and it makes a difference in your lives.
 
 Good Luck!
+
 David
